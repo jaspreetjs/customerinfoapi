@@ -1,7 +1,7 @@
 package com.amazonaws.lambda.customers;
 
-public class RequestParams {
-
+public class RequestObject {
+	
 	long cin;
 
 	public long getCin() {
@@ -12,12 +12,12 @@ public class RequestParams {
 		this.cin = cin;
 	}
 
-	public RequestParams() {
+	public RequestObject() {
 		this.cin = -1;
 	}
 
-	public RequestParams(long cin) {
+	public RequestObject(long cin) {
 		this.cin = cin;
 	}
-
+	
 }

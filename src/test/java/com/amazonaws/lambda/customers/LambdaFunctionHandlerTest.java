@@ -13,7 +13,7 @@ import com.amazonaws.services.lambda.runtime.Context;
  */
 public class LambdaFunctionHandlerTest {
 
-    private static RequestParams input;
+    private static RequestObject input;
 
     @BeforeClass
     public static void createInput() throws IOException {

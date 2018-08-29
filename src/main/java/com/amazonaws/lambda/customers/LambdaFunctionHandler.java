@@ -9,27 +9,28 @@ import java.sql.Statement;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-public class LambdaFunctionHandler implements RequestHandler<RequestParams, ResponseObject> {
+public class LambdaFunctionHandler implements RequestHandler<RequestObject, ResponseObject> {
 
 	@Override
-	public ResponseObject handleRequest(RequestParams request, Context context) {
+	public ResponseObject handleRequest(RequestObject request, Context context) {
+
+		Connection dbConnection = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
 
 		try {
 
-			Connection conn = DriverManager.getConnection(
-					"jdbc:mysql://DB_ENDPOINT:PORT/DB_NAME", "DB_USERNAME",
-					"DB_PASSWORD");
+			dbConnection = DriverManager.getConnection(DBConfig.DB_URL, DBConfig.DB_USERNAME, DBConfig.DB_PASSWORD);
 
 			context.getLogger().log("Connection established");
 
-			String query = "select c.CIN, c.Name, ct.Description as CustomerType, c.Address, rc.Name as ResidenceCountry, ic.Name as IncorporationCountry, sic.IndustryClassification\n" + 
-					"from CustomerInfo c inner join CustomerTypes ct on c.Type = ct.CustomerType\n" + 
-					"inner join CountryCodes rc on c.ResidenceCountry = rc.CountryCode\n" + 
-					"left join CountryCodes ic on c.IncorporationCountry = ic.CountryCode\n" + 
-					"left join SICCodes sic on c.SICCode = sic.SICCode\n" + 
-					"where c.CIN = " + request.cin;
-			Statement statement = conn.createStatement();
-			ResultSet resultSet = statement.executeQuery(query);
+			String query = "select c.CIN, c.Name, ct.Description as CustomerType, c.Address, rc.Name as ResidenceCountry, ic.Name as IncorporationCountry, sic.IndustryClassification\n"
+					+ "from CustomerInfo c inner join CustomerTypes ct on c.Type = ct.CustomerType\n"
+					+ "inner join CountryCodes rc on c.ResidenceCountry = rc.CountryCode\n"
+					+ "left join CountryCodes ic on c.IncorporationCountry = ic.CountryCode\n"
+					+ "left join SICCodes sic on c.SICCode = sic.SICCode\n" + "where c.CIN = " + request.getCin();
+			statement = dbConnection.createStatement();
+			resultSet = statement.executeQuery(query);
 
 			context.getLogger().log("Query Executed");
 
@@ -37,7 +38,7 @@ public class LambdaFunctionHandler implements RequestHandler<RequestParams, Resp
 
 				ResponseObject response = new ResponseObject();
 
-				response.setCin(request.cin);
+				response.setCin(request.getCin());
 				response.setName(resultSet.getString("Name"));
 				response.setCustomerType(resultSet.getString("CustomerType"));
 				response.setAddress(resultSet.getString("Address"));
@@ -54,10 +55,30 @@ public class LambdaFunctionHandler implements RequestHandler<RequestParams, Resp
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
+		} finally {
+
+			try {
+
+				if (resultSet != null) {
+					resultSet.close();
+				}
+
+				if (statement != null) {
+					statement.close();
+				}
+
+				if (dbConnection != null) {
+					dbConnection.close();
+				}
+
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			
 		}
 
 		ResponseObject errorResponse = new ResponseObject();
-		errorResponse.setCin(request.cin);
+		errorResponse.setCin(request.getCin());
 		errorResponse.setQueryStatus("error: customer not found");
 
 		return errorResponse;
